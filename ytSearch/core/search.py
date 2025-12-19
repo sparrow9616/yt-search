@@ -48,7 +48,10 @@ class SearchCore(RequestCore, RequestHandler, ComponentHandler):
         self._getRequestBody()
         request = self.syncPostRequest()
         try:
-            self.response = request.text
+            if request:
+                self.response = request.text
+            else:
+                raise Exception('ERROR: Could not make request.')
         except:
             raise Exception('ERROR: Could not make request.')
 
@@ -107,21 +110,25 @@ class SearchCore(RequestCore, RequestHandler, ComponentHandler):
 
     def _getComponents(self, findVideos: bool, findChannels: bool, findPlaylists: bool) -> None:
         self.resultComponents = []
+        if not self.responseSource:
+            return
         for element in self.responseSource:
-            if videoElementKey in element.keys() and findVideos:
+            if videoElementKey in element and findVideos:
                 self.resultComponents.append(self._getVideoComponent(element))
-            if channelElementKey in element.keys() and findChannels:
+            if channelElementKey in element and findChannels:
                 self.resultComponents.append(self._getChannelComponent(element))
-            if playlistElementKey in element.keys() and findPlaylists:
+            if playlistElementKey in element and findPlaylists:
                 self.resultComponents.append(self._getPlaylistComponent(element))
-            if shelfElementKey in element.keys() and findVideos:
+            if 'lockupViewModel' in element and findPlaylists:
+                self.resultComponents.append(self._getPlaylistComponent(element))
+            if shelfElementKey in element and findVideos:
                 for shelfElement in self._getShelfComponent(element)['elements']:
                     self.resultComponents.append(
                         self._getVideoComponent(shelfElement, shelfTitle=self._getShelfComponent(element)['title']))
-            if richItemKey in element.keys() and findVideos:
+            if richItemKey in element and findVideos:
                 richItemElement = self._getValue(element, [richItemKey, 'content'])
                 ''' Initial fallback handling for VideosSearch '''
-                if videoElementKey in richItemElement.keys():
+                if videoElementKey in richItemElement:
                     videoComponent = self._getVideoComponent(richItemElement)
                     self.resultComponents.append(videoComponent)
             if len(self.resultComponents) >= self.limit:

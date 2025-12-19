@@ -17,23 +17,27 @@ class RequestCore:
             self.proxy["https://"] = https_proxy
 
     def syncPostRequest(self) -> httpx.Response:
+        proxy_url = self.proxy.get("https://") or self.proxy.get("http://") if self.proxy else None
         return httpx.post(
             self.url,
             headers={"User-Agent": userAgent},
             json=self.data,
             timeout=self.timeout,
-            proxies=self.proxy
+            proxy=proxy_url
         )
 
     async def asyncPostRequest(self) -> httpx.Response:
-        async with httpx.AsyncClient(proxies=self.proxy) as client:
+        proxy_url = self.proxy.get("https://") or self.proxy.get("http://") if self.proxy else None
+        async with httpx.AsyncClient(proxy=proxy_url) as client:
             r = await client.post(self.url, headers={"User-Agent": userAgent}, json=self.data, timeout=self.timeout)
             return r
 
     def syncGetRequest(self) -> httpx.Response:
-        return httpx.get(self.url, headers={"User-Agent": userAgent}, timeout=self.timeout, cookies={'CONSENT': 'YES+1'}, proxies=self.proxy)
+        proxy_url = self.proxy.get("https://") or self.proxy.get("http://") if self.proxy else None
+        return httpx.get(self.url, headers={"User-Agent": userAgent}, timeout=self.timeout, cookies={'CONSENT': 'YES+1'}, proxy=proxy_url)
 
     async def asyncGetRequest(self) -> httpx.Response:
-        async with httpx.AsyncClient(proxies=self.proxy) as client:
+        proxy_url = self.proxy.get("https://") or self.proxy.get("http://") if self.proxy else None
+        async with httpx.AsyncClient(proxy=proxy_url) as client:
             r = await client.get(self.url, headers={"User-Agent": userAgent}, timeout=self.timeout, cookies={'CONSENT': 'YES+1'})
             return r

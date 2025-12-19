@@ -34,7 +34,7 @@ class ComponentHandler:
             },
         }
         component['link'] = 'https://www.youtube.com/watch?v=' + component['id']
-        component['channel']['link'] = 'https://www.youtube.com/channel/' + component['channel']['id']
+        if component['channel']['id'] : component['channel']['link'] = 'https://www.youtube.com/channel/' + component['channel']['id']
         component['shelfTitle'] = shelfTitle
         return component
 
@@ -53,20 +53,120 @@ class ComponentHandler:
         return component
 
     def _getPlaylistComponent(self, element: dict) -> dict:
-        playlist = element[playlistElementKey]
-        component = {
-            'type':                           'playlist',
-            'id':                             self._getValue(playlist, ['playlistId']),
-            'title':                          self._getValue(playlist, ['title', 'simpleText']),
-            'videoCount':                     self._getValue(playlist, ['videoCount']),
-            'channel': {
-                'name':                       self._getValue(playlist, ['shortBylineText', 'runs', 0, 'text']),
-                'id':                         self._getValue(playlist, ['shortBylineText', 'runs', 0, 'navigationEndpoint', 'browseEndpoint', 'browseId']),
-            },
-            'thumbnails':                     self._getValue(playlist, ['thumbnailRenderer', 'playlistVideoThumbnailRenderer', 'thumbnail', 'thumbnails']),
-        }
-        component['link'] = 'https://www.youtube.com/playlist?list=' + component['id']
-        component['channel']['link'] = 'https://www.youtube.com/channel/' + component['channel']['id']
+        if playlistElementKey in element:
+            playlist = element[playlistElementKey]
+            component = {
+                "type": "playlist",
+                "id": self._getValue(playlist, ["playlistId"]),
+                "title": self._getValue(playlist, ["title", "simpleText"]),
+                "videoCount": self._getValue(playlist, ["videoCount"]),
+                "channel": {
+                    "name": self._getValue(
+                        playlist, ["shortBylineText", "runs", 0, "text"]
+                    ),
+                    "id": self._getValue(
+                        playlist,
+                        [
+                            "shortBylineText",
+                            "runs",
+                            0,
+                            "navigationEndpoint",
+                            "browseEndpoint",
+                            "browseId",
+                        ],
+                    ),
+                },
+                "thumbnails": self._getValue(
+                    playlist,
+                    [
+                        "thumbnailRenderer",
+                        "playlistVideoThumbnailRenderer",
+                        "thumbnail",
+                        "thumbnails",
+                    ],
+                ),
+            }
+        elif "lockupViewModel" in element:
+            lockup = element["lockupViewModel"]
+            component = {
+                "type": "playlist",
+                "id": self._getValue(lockup, ["contentId"]),
+                "title": self._getValue(
+                    lockup,
+                    ["metadata", "lockupMetadataViewModel", "title", "content"],
+                ),
+                "thumbnails": self._getValue(
+                    lockup,
+                    [
+                        "contentImage",
+                        "collectionThumbnailViewModel",
+                        "primaryThumbnail",
+                        "thumbnailViewModel",
+                        "image",
+                        "sources",
+                    ],
+                ),
+                "videoCount": self._getValue(
+                    lockup,
+                    [
+                        "contentImage",
+                        "collectionThumbnailViewModel",
+                        "primaryThumbnail",
+                        "thumbnailViewModel",
+                        "overlays",
+                        0,
+                        "thumbnailOverlayBadgeViewModel",
+                        "thumbnailBadges",
+                        0,
+                        "thumbnailBadgeViewModel",
+                        "text",
+                    ],
+                ),
+                "channel": {
+                    "name": self._getValue(
+                        lockup,
+                        [
+                            "metadata",
+                            "lockupMetadataViewModel",
+                            "metadata",
+                            "contentMetadataViewModel",
+                            "metadataRows",
+                            0,
+                            "metadataParts",
+                            0,
+                            "text",
+                            "content",
+                        ],
+                    ),
+                    "id": self._getValue(
+                        lockup,
+                        [
+                            "metadata",
+                            "lockupMetadataViewModel",
+                            "metadata",
+                            "contentMetadataViewModel",
+                            "metadataRows",
+                            0,
+                            "metadataParts",
+                            0,
+                            "text",
+                            "commandRuns",
+                            0,
+                            "onTap",
+                            "innertubeCommand",
+                            "browseEndpoint",
+                            "browseId",
+                        ],
+                    ),
+                },
+            }
+        else:
+            raise ValueError(
+                "ERROR: Could not parse playlist element."
+            )
+        
+        component["link"] = "https://www.youtube.com/playlist?list=" + component["id"]
+        if component["channel"]["id"]: component["channel"]["link"] = ("https://www.youtube.com/channel/" + component["channel"]["id"])
         return component
     
     def _getVideoFromChannelSearch(self, elements: list) -> list:
