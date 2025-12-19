@@ -2,8 +2,8 @@
 
 A lightweight, modern YouTube search library with async/await support. Search for videos, channels, playlists, and retrieve complete playlist information with ease.
 
-[![PyPI version](https://badge.fury.io/py/yt-search-lite.svg)](https://pypi.org/project/yt-search-lite/)
-[![Python](https://img.shields.io/pypi/pyversions/yt-search-lite.svg)](https://pypi.org/project/yt-search-lite/)
+[![PyPI version](https://badge.fury.io/py/yt-search-py.svg)](https://pypi.org/project/yt-search-py/)
+[![Python](https://img.shields.io/pypi/pyversions/yt-search-py.svg)](https://pypi.org/project/yt-search-py/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 ## Features
@@ -30,7 +30,7 @@ A lightweight, modern YouTube search library with async/await support. Search fo
 ## Installation
 
 ```bash
-pip install yt-search
+pip install yt-search-py
 ```
 
 ## Quick Start
