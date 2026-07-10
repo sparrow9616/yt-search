@@ -270,6 +270,90 @@ class ComponentHandler:
             'elements':                        self._getValue(shelf, ['content', 'verticalListRenderer', 'items']),
         }
 
+    def _getSuggestionComponent(self, element: dict) -> Union[dict, None]:
+        '''Normalises a single related-video entry from the `next` endpoint.
+
+        YouTube serves these either as the modern `lockupViewModel` or, for some
+        regions and clients, still as the legacy `compactVideoRenderer`.
+        '''
+        if lockupElementKey in element:
+            return self._getLockupVideoComponent(element)
+        if compactVideoElementKey in element:
+            return self._getCompactVideoComponent(element)
+        return None
+
+    def _getLockupVideoComponent(self, element: dict) -> Union[dict, None]:
+        lockup = element[lockupElementKey]
+        if self._getValue(lockup, ['contentType']) != lockupVideoContentType:
+            return None
+        avatar = lockupMetadataPath + ['image', 'decoratedAvatarViewModel']
+        component = {
+            'type':               'video',
+            'id':                 self._getValue(lockup, ['contentId']),
+            'title':              self._getValue(lockup, lockupMetadataPath + ['title', 'content']),
+            'duration':           self._getLockupDuration(lockup),
+            'thumbnails':         self._getValue(lockup, lockupThumbnailPath + ['image', 'sources']),
+            'channel': {
+                'name':           self._getValue(lockup, lockupMetadataPath + ['metadata', 'contentMetadataViewModel', 'metadataRows', 0, 'metadataParts', 0, 'text', 'content']),
+                'id':             self._getValue(lockup, avatar + ['rendererContext', 'commandContext', 'onTap', 'innertubeCommand', 'browseEndpoint', 'browseId']),
+                'thumbnails':     self._getValue(lockup, avatar + ['avatar', 'avatarViewModel', 'image', 'sources']),
+            },
+        }
+        component['viewCount'], component['publishedTime'] = self._getLockupStats(lockup)
+        component['link'] = 'https://www.youtube.com/watch?v=' + component['id']
+        if component['channel']['id']:
+            component['channel']['link'] = 'https://www.youtube.com/channel/' + component['channel']['id']
+        return component
+
+    def _getLockupDuration(self, lockup: dict) -> Union[str, None]:
+        overlays = self._getValue(lockup, lockupThumbnailPath + ['overlays']) or []
+        for overlay in overlays:
+            badges = self._getValue(overlay, ['thumbnailBottomOverlayViewModel', 'badges']) or []
+            for badge in badges:
+                text = self._getValue(badge, ['thumbnailBadgeViewModel', 'text'])
+                if text and ':' in text:
+                    return text
+        return None
+
+    def _getLockupStats(self, lockup: dict) -> tuple:
+        '''The second metadata row carries view count and upload age, but live
+        streams and premieres drop or reword parts of it, so match on content
+        rather than position.'''
+        rows = self._getValue(lockup, lockupMetadataPath + ['metadata', 'contentMetadataViewModel', 'metadataRows']) or []
+        texts = []
+        for row in rows[1:]:
+            for part in row.get('metadataParts', []):
+                text = self._getValue(part, ['text', 'content'])
+                if text:
+                    texts.append(text)
+        viewCount = next((t for t in texts if 'view' in t.lower() or 'watching' in t.lower()), None)
+        publishedTime = next((t for t in texts if 'ago' in t.lower()), None)
+        return {'short': viewCount, 'text': viewCount}, publishedTime
+
+    def _getCompactVideoComponent(self, element: dict) -> dict:
+        video = element[compactVideoElementKey]
+        component = {
+            'type':               'video',
+            'id':                 self._getValue(video, ['videoId']),
+            'title':              self._getValue(video, ['title', 'simpleText']),
+            'publishedTime':      self._getValue(video, ['publishedTimeText', 'simpleText']),
+            'duration':           self._getValue(video, ['lengthText', 'simpleText']),
+            'viewCount': {
+                'text':           self._getValue(video, ['viewCountText', 'simpleText']),
+                'short':          self._getValue(video, ['shortViewCountText', 'simpleText']),
+            },
+            'thumbnails':         self._getValue(video, ['thumbnail', 'thumbnails']),
+            'channel': {
+                'name':           self._getValue(video, ['longBylineText', 'runs', 0, 'text']),
+                'id':             self._getValue(video, ['longBylineText', 'runs', 0, 'navigationEndpoint', 'browseEndpoint', 'browseId']),
+                'thumbnails':     self._getValue(video, ['channelThumbnail', 'thumbnails']),
+            },
+        }
+        component['link'] = 'https://www.youtube.com/watch?v=' + component['id']
+        if component['channel']['id']:
+            component['channel']['link'] = 'https://www.youtube.com/channel/' + component['channel']['id']
+        return component
+
     def _getValue(self, source: dict, path: List[str]) -> Union[str, int, dict, None]:
         value = source
         for key in path:

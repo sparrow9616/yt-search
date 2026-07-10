@@ -1,9 +1,11 @@
+import asyncio
 import copy
 from typing import Union
 from urllib.parse import urlencode
 
 from ytSearch.core.requests import RequestCore
 from ytSearch.core.handlers import ComponentHandler, RequestHandler
+from ytSearch.core.suggestions import SuggestionsCore
 from ytSearch.core.constants import *
 
 import json
@@ -14,7 +16,7 @@ class SearchCore(RequestCore, RequestHandler, ComponentHandler):
     responseSource = None
     resultComponents = []
 
-    def __init__(self, query: str, limit: int, language: str, region: str, searchPreferences: str, timeout: int):
+    def __init__(self, query: str, limit: int, language: str, region: str, searchPreferences: str, timeout: int, suggestions: bool = False, suggestionsLimit: int = 10):
         super().__init__()
         self.query = query
         self.limit = limit
@@ -22,11 +24,43 @@ class SearchCore(RequestCore, RequestHandler, ComponentHandler):
         self.region = region
         self.searchPreferences = searchPreferences
         self.timeout = timeout
+        self.suggestions = suggestions
+        self.suggestionsLimit = suggestionsLimit
         self.continuationKey = None
 
     def sync_create(self):
         self._makeRequest()
         self._parseSource()
+        self._getComponents(*self.searchMode)
+        if self.suggestions:
+            self._attachSuggestions()
+
+    def _suggestionsCore(self, videoId: str) -> SuggestionsCore:
+        return SuggestionsCore(videoId, self.suggestionsLimit, self.language, self.region, self.timeout)
+
+    def _suggestableComponents(self) -> list:
+        if not self.suggestions or self.suggestionsLimit < 1:
+            return []
+        return [c for c in self.resultComponents if c.get('type') == 'video' and c.get('id')]
+
+    def _attachSuggestions(self) -> None:
+        for component in self._suggestableComponents():
+            core = self._suggestionsCore(component['id'])
+            core.sync_create()
+            component['suggestions'] = core.result()['result']
+            component['autoplay'] = core.autoplay
+
+    async def _attachSuggestionsAsync(self) -> None:
+        components = self._suggestableComponents()
+        if not components:
+            return
+
+        async def fetch(component: dict) -> None:
+            core = self._suggestionsCore(component['id'])
+            component['suggestions'] = (await core._nextAsync())['result']
+            component['autoplay'] = core.autoplay
+
+        await asyncio.gather(*(fetch(component) for component in components))
 
     def _getRequestBody(self):
         requestBody = copy.deepcopy(requestPayload)
@@ -93,6 +127,8 @@ class SearchCore(RequestCore, RequestHandler, ComponentHandler):
             self._makeRequest()
             self._parseSource()
             self._getComponents(*self.searchMode)
+            if self.suggestions:
+                self._attachSuggestions()
             return True
         else:
             return False
@@ -104,6 +140,8 @@ class SearchCore(RequestCore, RequestHandler, ComponentHandler):
         await self._makeAsyncRequest()
         self._parseSource()
         self._getComponents(*self.searchMode)
+        if self.suggestions:
+            await self._attachSuggestionsAsync()
         return {
             'result': self.resultComponents,
         }
@@ -122,9 +160,12 @@ class SearchCore(RequestCore, RequestHandler, ComponentHandler):
             if 'lockupViewModel' in element and findPlaylists:
                 self.resultComponents.append(self._getPlaylistComponent(element))
             if shelfElementKey in element and findVideos:
-                for shelfElement in self._getShelfComponent(element)['elements']:
-                    self.resultComponents.append(
-                        self._getVideoComponent(shelfElement, shelfTitle=self._getShelfComponent(element)['title']))
+                ''' Shelves that are not vertical lists carry no elements. '''
+                shelf = self._getShelfComponent(element)
+                for shelfElement in shelf['elements'] or []:
+                    if videoElementKey in shelfElement:
+                        self.resultComponents.append(
+                            self._getVideoComponent(shelfElement, shelfTitle=shelf['title']))
             if richItemKey in element and findVideos:
                 richItemElement = self._getValue(element, [richItemKey, 'content'])
                 ''' Initial fallback handling for VideosSearch '''

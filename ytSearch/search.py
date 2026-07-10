@@ -11,6 +11,8 @@ class Search(SearchCore):
         limit (int, optional): Sets limit to the number of results. Defaults to 20.
         language (str, optional): Sets the result language. Defaults to 'en'.
         region (str, optional): Sets the result region. Defaults to 'US'.
+        suggestions (bool, optional): Attaches YouTube's suggested videos to each video result. Defaults to False.
+        suggestionsLimit (int, optional): Sets limit to the number of suggestions per video. Defaults to 10.
 
     Examples:
         Calling `result` method gives the search result.
@@ -68,9 +70,9 @@ class Search(SearchCore):
             ]
         }
     '''
-    def __init__(self, query: str, limit: int = 20, language: str = 'en', region: str = 'US', timeout: int = None):
+    def __init__(self, query: str, limit: int = 20, language: str = 'en', region: str = 'US', timeout: int = None, suggestions: bool = False, suggestionsLimit: int = 10):
         self.searchMode = (True, True, True)
-        super().__init__(query, limit, language, region, None, timeout)
+        super().__init__(query, limit, language, region, None, timeout, suggestions, suggestionsLimit)
 
     async def next(self) -> Dict[str, Any]:
         return await self._nextAsync()
@@ -83,6 +85,8 @@ class VideosSearch(SearchCore):
         limit (int, optional): Sets limit to the number of results. Defaults to 20.
         language (str, optional): Sets the result language. Defaults to 'en'.
         region (str, optional): Sets the result region. Defaults to 'US'.
+        suggestions (bool, optional): Attaches YouTube's suggested videos to each video result. Defaults to False.
+        suggestionsLimit (int, optional): Sets limit to the number of suggestions per video. Defaults to 10.
 
     Examples:
         Calling `result` method gives the search result.
@@ -140,9 +144,9 @@ class VideosSearch(SearchCore):
             ]
         }
     '''
-    def __init__(self, query: str, limit: int = 20, language: str = 'en', region: str = 'US', timeout: int = None):
+    def __init__(self, query: str, limit: int = 20, language: str = 'en', region: str = 'US', timeout: int = None, suggestions: bool = False, suggestionsLimit: int = 10):
         self.searchMode = (True, False, False)
-        super().__init__(query, limit, language, region, SearchMode.videos, timeout)
+        super().__init__(query, limit, language, region, SearchMode.videos, timeout, suggestions, suggestionsLimit)
 
     async def next(self) -> Dict[str, Any]:
         return await self._nextAsync()
@@ -273,7 +277,9 @@ class CustomSearch(SearchCore):
         limit (int, optional): Sets limit to the number of results. Defaults to 20.
         language (str, optional): Sets the result language. Defaults to 'en'.
         region (str, optional): Sets the result region. Defaults to 'US'.
-    
+        suggestions (bool, optional): Attaches YouTube's suggested videos to each video result. Defaults to False.
+        suggestionsLimit (int, optional): Sets limit to the number of suggestions per video. Defaults to 10.
+
     Examples:
         Calling `result` method gives the search result.
 
@@ -330,9 +336,9 @@ class CustomSearch(SearchCore):
             ]
         }
     '''
-    def __init__(self, query: str, searchPreferences: str, limit: int = 20, language: str = 'en', region: str = 'US', timeout: int = None):
+    def __init__(self, query: str, searchPreferences: str, limit: int = 20, language: str = 'en', region: str = 'US', timeout: int = None, suggestions: bool = False, suggestionsLimit: int = 10):
         self.searchMode = (True, True, True)
-        super().__init__(query, limit, language, region, searchPreferences, timeout)
+        super().__init__(query, limit, language, region, searchPreferences, timeout, suggestions, suggestionsLimit)
     
     async def next(self) -> Dict[str, Any]:
         return await self._nextAsync()

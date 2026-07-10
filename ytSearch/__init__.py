@@ -1,5 +1,6 @@
 from ytSearch.search import *
 from ytSearch.playlist import Playlist
+from ytSearch.suggestions import VideoSuggestions
 from ytSearch.core.constants import *
 
 

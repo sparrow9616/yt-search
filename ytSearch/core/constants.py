@@ -37,6 +37,16 @@ playlistSecondaryInfoKey = 'playlistSidebarSecondaryInfoRenderer'
 playlistVideoKey = 'playlistVideoRenderer'
 
 
+lockupElementKey = 'lockupViewModel'
+compactVideoElementKey = 'compactVideoRenderer'
+lockupVideoContentType = 'LOCKUP_CONTENT_TYPE_VIDEO'
+suggestionsPath = ['contents', 'twoColumnWatchNextResults', 'secondaryResults', 'secondaryResults', 'results']
+suggestionsContinuationPath = ['onResponseReceivedEndpoints', 0, 'appendContinuationItemsAction', 'continuationItems']
+autoplayVideoIdPath = ['contents', 'twoColumnWatchNextResults', 'autoplay', 'autoplay', 'sets', 0, 'autoplayVideo', 'watchEndpoint', 'videoId']
+lockupMetadataPath = ['metadata', 'lockupMetadataViewModel']
+lockupThumbnailPath = ['contentImage', 'thumbnailViewModel']
+
+
 class ResultMode:
     json = 0
     dict = 1
